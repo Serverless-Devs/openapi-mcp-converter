@@ -24,14 +24,14 @@
 引入依赖：
 
 ```bash
-npm install openapi-mcp-converter
+npm install @serverless-devs/openapi-mcp-converter
 ```
 
 创建一个 Server 实例:
 
 ```typescript
 import fs from 'fs';
-import { OpenApiMCPSeverConverter } from '../index.js';
+import { OpenApiMCPSeverConverter } from '@serverless-devs/openapi-mcp-converter';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
