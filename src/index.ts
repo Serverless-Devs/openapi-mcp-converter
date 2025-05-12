@@ -145,13 +145,13 @@ export class OpenApiMCPSeverConverter {
 
   private analyzeOpenApiSchema(): ToolCall[] {
     const results: ToolCall[] = [];
-    const servers = this.openApiDoc.servers || [{ url: "/" }];
+    const globalServers = this.openApiDoc.servers || [{ url: "/" }];
 
     for (const [path, pathItem] of Object.entries(this.openApiDoc.paths)) {
+      const pathServers = pathItem?.servers || globalServers;
       for (const method of Object.values(OpenAPIV3.HttpMethods)) {
         const operation = pathItem?.[method];
         if (!operation) continue;
-
         const securitySchemes = [
           ...(this.openApiDoc.security || []),
           ...(operation.security || []),
@@ -174,13 +174,14 @@ export class OpenApiMCPSeverConverter {
                 | OpenAPIV3.RequestBodyObject
                 | undefined);
 
+        // 服务器选择优先级：operation > path > global
+        const operationServers = operation.servers || pathServers;
+        const baseUrl = operationServers[0].url.replace(/\/$/, "");
+        const fullUrl = new URL(path, baseUrl).toString();
         const parametersSchema = this.buildParameterSchema(
           parameters,
           requestBody
         );
-        const baseUrl = servers[0].url.replace(/\/$/, "");
-        const fullUrl = `${baseUrl}${path}`;
-
         results.push({
           path,
           method,
