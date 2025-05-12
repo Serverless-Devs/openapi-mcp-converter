@@ -1,6 +1,6 @@
 {
   "name": "@serverless-devs/openapi-mcp-converter",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Convert OpenAPI specs to MCP server",
   "license": "MIT",
   "author": "zxypro1",
