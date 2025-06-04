@@ -159,12 +159,6 @@ app.delete('/mcp', handleSessionRequest);
 app.listen(3000);
 ```
 
-### 运行示例
-
-```bash
-npm test  # 执行示例测试用例
-```
-
 ## 开发指南
 
 ### 项目结构

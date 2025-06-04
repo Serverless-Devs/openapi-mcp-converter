@@ -167,12 +167,9 @@ export class OpenApiMCPSeverConverter {
           pathItem.parameters,
           operation.parameters
         );
-        const requestBody =
-          operation.requestBody && "$ref" in operation.requestBody
-            ? this.resolveRequestBodyRef(operation.requestBody.$ref)
-            : (operation.requestBody as
-                | OpenAPIV3.RequestBodyObject
-                | undefined);
+        const requestBody = operation.requestBody as
+          | OpenAPIV3.RequestBodyObject
+          | undefined;
 
         // 服务器选择优先级：operation > path > global
         const operationServers = operation.servers || pathServers;
@@ -295,6 +292,18 @@ export class OpenApiMCPSeverConverter {
     return Array.from(paramMap.values());
   }
 
+  private resolveSchemaReference(
+    ref: string
+  ): OpenAPIV3.SchemaObject | undefined {
+    const paths = ref.replace("#/", "").split("/");
+    let current: any = this.openApiDoc;
+    for (const path of paths) {
+      current = current?.[path];
+      if (!current) return undefined;
+    }
+    return current as OpenAPIV3.SchemaObject;
+  }
+
   private buildParameterSchema(
     parameters: OpenAPIV3.ParameterObject[],
     requestBody?: OpenAPIV3.RequestBodyObject
@@ -311,12 +320,23 @@ export class OpenApiMCPSeverConverter {
       const target = schema.properties![location] as JSONSchema;
       if (!target.properties) target.properties = {};
 
+      // 解析 schema，处理 $ref
+      let resolvedSchema: OpenAPIV3.SchemaObject = {};
+      if (param.schema) {
+        if ("$ref" in param.schema) {
+          const refPath = (param.schema as OpenAPIV3.ReferenceObject).$ref;
+          const resolved = this.resolveSchemaReference(refPath);
+          resolvedSchema = resolved || {};
+        } else {
+          resolvedSchema = param.schema as OpenAPIV3.SchemaObject;
+        }
+      }
+
       // 合并元数据到参数 schema
       const paramSchema: JSONSchema = {
-        ...((param.schema as JSONSchema) || {}), // 原始类型定义
-        description:
-          param.description || (param.schema as JSONSchema)?.description,
-        default: param.example ?? (param.schema as JSONSchema)?.example, // 优先级：参数级 example > schema 级 example
+        ...resolvedSchema,
+        description: param.description || resolvedSchema.description,
+        default: param.example ?? resolvedSchema.example,
       };
 
       target.properties![param.name] = paramSchema;
@@ -325,12 +345,24 @@ export class OpenApiMCPSeverConverter {
 
     // 处理请求体
     if (requestBody?.content?.["application/json"]?.schema) {
-      const bodySchema = requestBody.content["application/json"]
-        .schema as JSONSchema;
+      let bodySchema: OpenAPIV3.SchemaObject | undefined = undefined;
+
+      // 处理 $ref 引用
+      if ("$ref" in requestBody.content["application/json"].schema) {
+        const refPath = (
+          requestBody.content["application/json"]
+            .schema as OpenAPIV3.ReferenceObject
+        ).$ref;
+        bodySchema = this.resolveSchemaReference(refPath) || {};
+      } else {
+        bodySchema = requestBody.content["application/json"]
+          .schema as OpenAPIV3.SchemaObject;
+      }
+
       schema.properties!.body = {
         ...bodySchema,
         description: requestBody.description || bodySchema.description,
-        default: bodySchema.example,
+        default: bodySchema?.example,
       };
       if (requestBody.required) schema.required!.push("body");
     }

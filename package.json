@@ -1,6 +1,6 @@
 {
   "name": "@serverless-devs/openapi-mcp-converter",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Convert OpenAPI specs to MCP server",
   "license": "MIT",
   "author": "zxypro1",
@@ -20,8 +20,7 @@
   },
   "scripts": {
     "build": "tsc && shx chmod +x dist/*.js",
-    "watch": "tsc --watch",
-    "test": "tsc && cd ./dist/example/ && node index.js"
+    "watch": "tsc --watch"
   },
   "publishConfig": {
     "access": "public"
